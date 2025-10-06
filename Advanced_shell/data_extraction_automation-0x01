@@ -14,8 +14,8 @@ jq -r '"\(.name)|\(.height)|\(.weight)|\(.types[].type.name)"' "$INPUT_FILE" | \
 awk -F'|' '
 {
     name = $1
-    height = $2 / 10
-    weight = $3 / 10
+    formatted_height = $2 / 10
+    formatted_weight = $3 / 10
 
     # Process types (fields 4 and beyond)
     types = ""
@@ -30,6 +30,6 @@ awk -F'|' '
     # Capitalize Pokémon name
     name = toupper(substr(name,1,1)) substr(name,2)
     
-    print name " is of type " types ", weighs " weight "kg, and is " height "m tall."
+    printf "%s is of type %s, weighs %skg, and is %sm tall.\n", name, types, formatted_weight, formatted_height
 }' | \
 sed 's/, \([[^,]]*\)$/ and \1/' # Replace the last comma with "and"
