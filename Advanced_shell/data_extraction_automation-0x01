@@ -1,0 +1,35 @@
+#!/bin/bash
+
+# Pokêmon Data Extractor
+INPUT_FILE="data.json"
+
+# Check if input file exists
+if [ ! -f "$INPUT_FILE" ]; then
+    echo "Error: $INPUT_FILE not found. Please run the API script first."
+    exit 1
+fi
+
+# Extract the data and format using jq, awk and sed
+jq -r '"\(.name)|\(.height)|\(.weight)|\(.types[].type.name)"' "$INPUT_FILE" | \
+awk -F'|' '
+{
+    name = $1
+    height = $2 / 10
+    weight = $3 / 10
+
+    # Process types (fields 4 and beyond)
+    types = ""
+    for (i=4; i<=NF; i++){
+        if($i != "") {
+            if(types != "") types = types ", "
+            # Capitalize first letter
+            types = types toupper(substr($i,1,1)) substr($i,2)
+        }
+    }
+
+    # Capitalize Pokémon name
+    name = toupper(substr(name,1,1)) substr(name,2)
+    
+    print name " is of type " types ", weighs " weight "kg, and is " height "m tall."
+}' | \
+sed 's/, \([[^,]]*\)$/ and \1/' # Replace the last comma with "and"
