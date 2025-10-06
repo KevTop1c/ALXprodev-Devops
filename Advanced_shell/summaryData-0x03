@@ -28,8 +28,16 @@ for json_file in "$DATA_DIR"/*.json; do
     fi
 done
 
-# Sort data by Pokémon name and append to CSV file
+# Use sed to clean and format the data before sorting
+sed -i 's/^[[:space:]]*//; s/[[:space:]]*$//' "$TEMP_FILE"  # Remove leading/trailing whitespace
+sed -i '/^$/d' "$TEMP_FILE"  # Remove empty lines
+
+# Sort the data by Pokémon name and append to CSV
 sort "$TEMP_FILE" >> "$REPORT_FILE"
+
+# Use sed to ensure proper CSV formatting in the final file
+sed -i 's/,,*/,/g' "$REPORT_FILE"  # Remove multiple commas
+sed -i '/^$/d' "$REPORT_FILE"      # Remove empty lines from final CSV
 
 # Calculate averages using awk
 awk -F',' '
