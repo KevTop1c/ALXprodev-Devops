@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# Pokémon Parallel Data Retriever
+POKEMON_LIST=("bulbasaur" "ivysaur" "venusaur" "charmander" "charmeleon")
+API_BASE_URL="https://pokeapi.co/api/v2/pokemon/"
+
+# Create pokemon_data directory
+mkdir -p pokemon_data
+
+# Function for parallel download
+download_pokemon() {
+    local pokemon=$1
+    echo "[$pokemon] Starting download..."
+
+    if curl -s --fail "${API_BASE_URL}/${pokemon}" > "pokemon_data/${pokemon}.json"; then
+        echo "[$pokemon] Download completed! ✅"
+    else
+        echo "[$pokemon] Download failed ❌"
+        rm -f "pokemon_data/${pokemon}.json"
+    fi
+}   
+
+echo "Starting parallel downloads for ${#POKEMON_LIST[@]} Pokêmon..."
+echo "=================================="
+
+# Start all downloads in background
+pids=()
+for pokemon in "${POKEMON_LIST[@]}"; do
+    download_pokemon "$pokemon" &
+    pid=$!
+    pids=("${pids[@]}" "$pid")
+    echo "[Monitor] Started: $pokemon (PID: $pid)"
+done
+
+# Wait for all background processes to complete
+echo ""
+echo "[Monitor] Waiting for all downloads to finish..."
+for pid in "${pids[@]}"; do
+    wait "$pid"
+done
+
+echo "================================"
+echo "All parallel downloads completed! 🎉"
