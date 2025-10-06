@@ -1,0 +1,54 @@
+#!/bin/bash
+
+# Pokémon Report Generator
+DATA_DIR="pokemon_data"
+REPORT_FILE="pokemon_report.csv"
+TEMP_FILE=$(mktemp)
+
+# Check if directory exists
+if [ ! -d "$DATA_DIR" ]; then
+    echo "Error: $DATA_DIR directory was not found. Please run the batch script first." >&2
+    exit 1
+fi
+
+# Check if there are json files
+if [ -z "$(ls -A "$DATA_DIR"/*.json 2>/dev/null)" ]; then
+    echo "Error: No JSON files found in $DATA_DIR" >&2
+    exit 1
+fi
+
+# Create CSV header
+echo "Name,Height (m),Weight (kg)" > "$REPORT_FILE"
+
+# Process each JSON file and extract data
+for json_file in "$DATA_DIR"/*.json; do 
+    if [ -f "$json_file" ]; then
+        # Extract data using jq and format for CSV
+        jq -r '"\(.name),\(.height / 10),\(.weight / 10)"' "$json_file" >> "$TEMP_FILE"
+    fi
+done
+
+# Sort data by Pokémon name and append to CSV file
+sort "$TEMP_FILE" >> "$REPORT_FILE"
+
+# Calculate averages using awk
+awk -F',' '
+NR > 1 {
+    total_height += $2
+    total_weight += $3
+    count ++
+}
+END {
+    if (count > 0) {
+        avg_height = total_height / count
+        avg_weight = total_weight / count
+        printf "\nAverage Height: %.2f m\n", avg_height
+        printf "Average Weight: %.2f kg\n", avg_weight
+    }
+}
+' "$REPORT_FILE"
+
+# Clean up temp file
+rm -f "$TEMP_FILE"
+
+echo "CSV Report generated at: $REPORT_FILE"
