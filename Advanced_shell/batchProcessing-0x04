@@ -24,20 +24,36 @@ echo "Starting parallel downloads for ${#POKEMON_LIST[@]} Pokêmon..."
 echo "=================================="
 
 # Start all downloads in background
-pids=()
 for pokemon in "${POKEMON_LIST[@]}"; do
     download_pokemon "$pokemon" &
-    pid=$!
-    pids=("${pids[@]}" "$pid")
-    echo "[Monitor] Started: $pokemon (PID: $pid)"
+    echo "[Monitor] Launched $pokemon"
 done
 
-# Wait for all background processes to complete
+# Process management using jobs and kill
 echo ""
-echo "[Monitor] Waiting for all downloads to finish..."
-for pid in "${pids[@]}"; do
-    wait "$pid"
+echo "[Monitor] Initial job status:"
+jobs
+
+active_jobs=$(jobs -p)
+echo "[Monitor] Active job PIDs: $active_jobs"
+
+# Monitor processes until all complete
+while [ -n "$(jobs -p)" ]; do
+    job_count=$(jobs -p | wc -w)
+    echo "[Monitor] $job_count jobs still running..."
+    
+    # Check each job using kill -0
+    for job_pid in $(jobs -p); do
+        if kill -0 "$job_pid" 2>/dev/null; then
+            echo "[Monitor] PID $job_pid still active"
+        fi
+    done
+    
+    sleep 2
+    echo "[Monitor] Current jobs:"
+    jobs
 done
 
+echo "[Monitor] All background processes completed!"
 echo "================================"
 echo "All parallel downloads completed! 🎉"
