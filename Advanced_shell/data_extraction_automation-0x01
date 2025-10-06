@@ -1,35 +1,37 @@
 #!/bin/bash
 
-# Pokêmon Data Extractor
+# Pokémon Data Extractor
 INPUT_FILE="data.json"
 
 # Check if input file exists
 if [ ! -f "$INPUT_FILE" ]; then
-    echo "Error: $INPUT_FILE not found. Please run the API script first."
+    echo "Error: $INPUT_FILE not found. Please run the API script first." >&2
     exit 1
 fi
 
-# Extract the data and format using jq, awk and sed
+# Extract raw data using jq
 jq -r '"\(.name)|\(.height)|\(.weight)|\(.types[].type.name)"' "$INPUT_FILE" | \
 awk -F'|' '
 {
     name = $1
     formatted_height = $2 / 10
     formatted_weight = $3 / 10
-
+    
     # Process types (fields 4 and beyond)
-    types = ""
-    for (i=4; i<=NF; i++){
+    type = ""
+    for(i=4; i<=NF; i++) {
         if($i != "") {
-            if(types != "") types = types ", "
+            if(type != "") type = type ", "
             # Capitalize first letter
-            types = types toupper(substr($i,1,1)) substr($i,2)
+            type = type toupper(substr($i,1,1)) substr($i,2)
         }
     }
-
+    
     # Capitalize Pokémon name
     name = toupper(substr(name,1,1)) substr(name,2)
     
-    print name " is of type " type ", weighs " formatted_weight "kg, and is " formatted_height "m tall."
+    # Use variable substitution in the exact format required
+    print "$name is of type $type, weighs ${formatted_weight}kg, and is ${formatted_height}m tall."
+
 }' | \
-sed 's/, \([[^,]]*\)$/ and \1/' # Replace the last comma with "and"
+sed 's/, \([[^,]]*\)$/ and \1/'  # Replace last comma with "and"
